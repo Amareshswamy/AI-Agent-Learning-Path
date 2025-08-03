@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive AI Agent Learning Path</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: "Soothing Sage and Stone" -->
+    <!-- Application Structure Plan: A tab-based single-page application is chosen for optimal user experience. The content is segmented into three logical levels (Basics, Essentials, Advanced), corresponding to the tabs. This structure prevents overwhelming the user with a long scroll and allows them to directly access the section most relevant to their current knowledge. A persistent progress tracker (donut chart) is included to gamify the learning process and provide immediate visual feedback on completion, enhancing user engagement and motivation. -->
+    <!-- Visualization & Content Choices: The primary "data" is the hierarchical learning path. Goal: Organize & Inform. Method: Interactive tabbed layout with expandable cards. Interaction: Users click tabs to switch levels, click cards to see details, and check boxes to mark progress. Goal: Motivate. Method: Donut Chart (Chart.js). Interaction: Dynamically updates on checkbox clicks. Justification: This interactive structure turns a passive document into an active learning tool, providing clear navigation and a sense of accomplishment. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .tab-active {
+            border-color: #047857; /* emerald-600 */
+            color: #047857;
+            font-weight: 600;
+        }
+        .details-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out;
+        }
+        .details-content.open {
+            max-height: 500px; /* Adjust as needed */
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 250px;
+            height: auto;
+            margin: auto;
+        }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+        
+        <header class="text-center mb-8 md:mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-emerald-800">Your Journey to AI Agents</h1>
+            <p class="mt-4 text-lg text-stone-600 max-w-3xl mx-auto">This interactive guide transforms the AI Agent learning path into a manageable and trackable journey. Click on any topic to reveal more details and check them off as you master them.</p>
+        </header>
+
+        <div class="lg:flex lg:space-x-8">
+
+            <main class="lg:w-2/3">
+                <nav class="mb-6 border-b border-stone-200">
+                    <ul class="flex flex-wrap -mb-px">
+                        <li class="mr-2">
+                            <button data-tab="level1" class="tab-btn inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-stone-600 hover:border-stone-300 tab-active">Level 1: Basics</button>
+                        </li>
+                        <li class="mr-2">
+                            <button data-tab="level2" class="tab-btn inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-stone-600 hover:border-stone-300">Level 2: Essentials</button>
+                        </li>
+                        <li>
+                            <button data-tab="level3" class="tab-btn inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-stone-600 hover:border-stone-300">Level 3: Advanced</button>
+                        </li>
+                    </ul>
+                </nav>
+
+                <div id="tab-content">
+                    <div id="level1" class="tab-pane active"></div>
+                    <div id="level2" class="tab-pane hidden"></div>
+                    <div id="level3" class="tab-pane hidden"></div>
+                </div>
+            </main>
+
+            <aside class="lg:w-1/3 mt-10 lg:mt-0 lg:sticky top-8">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200">
+                    <h2 class="text-2xl font-bold text-center text-emerald-800 mb-4">Your Progress</h2>
+                    <div class="chart-container">
+                        <canvas id="progressChart"></canvas>
+                    </div>
+                    <p id="progressText" class="text-center mt-4 text-stone-600 font-medium"></p>
+                </div>
+            </aside>
+
+        </div>
+    </div>
+
+    <script>
+        const learningData = [
+            { id: 1, level: 1, title: "GenAI Introduction", description: "Get familiar with what Generative AI is and where it's used.", details: "This foundational step involves understanding the core concepts of Generative AI, differentiating it from other types of AI, and exploring its applications across various industries like content creation, drug discovery, and software development.", completed: false },
+            { id: 2, level: 1, title: "Basics of LLMs", description: "Understand how large language models are trained & used.", details: "Dive into the architecture of Large Language Models (LLMs) like transformers. Learn about the lifecycle of an LLM, from pre-training on vast text corpora to fine-tuning for specific tasks.", completed: false },
+            { id: 3, level: 1, title: "Prompt Engineering", description: "Learn to write effective prompts for better LLM results.", details: "Master the art of crafting clear, concise, and context-rich prompts. Explore techniques like zero-shot, few-shot, and chain-of-thought prompting to guide the LLM towards generating more accurate and relevant outputs.", completed: false },
+            { id: 4, level: 1, title: "LLM Parameters", description: "Control outputs with temperature, top-p, and token settings.", details: "Gain control over the LLM's creativity and determinism by adjusting key parameters. 'Temperature' controls randomness, 'top-p' controls the nucleus of probable tokens, and token limits manage output length.", completed: false },
+            { id: 5, level: 1, title: "Data Preprocessing", description: "Clean, chunk, and format data for AI tasks.", details: "Learn the essential techniques for preparing your data to be used by an LLM. This includes cleaning text, splitting large documents into manageable chunks (chunking), and structuring the data in a consistent format.", completed: false },
+            { id: 6, level: 1, title: "RAG Fundamentals", description: "Combine LLMs with search to retrieve accurate info.", details: "Discover Retrieval-Augmented Generation (RAG), a powerful technique that grounds the LLM in external, up-to-date information. This reduces hallucinations and allows the model to cite its sources.", completed: false },
+            { id: 7, level: 1, title: "Vector Databases", description: "Store & search embeddings using Pinecone, Chroma, etc.", details: "Understand how text is converted into numerical representations (embeddings) and how vector databases are used to efficiently store and search these embeddings based on semantic similarity, forming the backbone of RAG systems.", completed: false },
+            { id: 8, level: 1, title: "API Wrappers", description: "Interact with LLMs using LangChain, LlamaIndex, or direct APIs.", details: "Learn to programmatically interact with LLMs. Use high-level frameworks like LangChain or LlamaIndex to simplify complex workflows, or work directly with the provider's API for maximum control.", completed: false },
+            { id: 9, level: 1, title: "Tool Integration", description: "Let LLMs call tools like search, code, or APIs.", details: "Extend the capabilities of an LLM by giving it access to external tools. This allows the model to perform actions like searching the web, running code, or interacting with other software APIs.", completed: false },
+            
+            { id: 10, level: 2, title: "What Are AI Agents?", description: "Learn how agents plan, reason, and act autonomously.", details: "Move beyond simple Q&A. Understand the core components of an AI agent: a reasoning engine (LLM), memory, planning capabilities, and the ability to use tools to execute tasks and achieve goals.", completed: false },
+            { id: 11, level: 2, title: "Agentic Frameworks", description: "Explore LangChain, CrewAI, AutoGen, and more.", details: "Dive into popular frameworks designed to build and manage AI agents. Compare their strengths for creating single agents, multi-agent systems, and complex, stateful workflows.", completed: false },
+            { id: 12, level: 2, title: "Build Your First Agent", description: "Create a simple AI agent that performs real tasks.", details: "Apply your knowledge in a hands-on project. Build a basic agent that can, for example, read a file, summarize its content, and save the summary to a new file, using a framework like LangChain.", completed: false },
+            { id: 13, level: 2, title: "Agent Workflows", description: "Design how agents think, act, and complete tasks.", details: "Learn about different agent architectures and reasoning loops, such as ReAct (Reason + Act). Design the logical flow that an agent follows to decompose a problem, select tools, and execute steps.", completed: false },
+            { id: 14, level: 2, title: "Agent Memory", description: "Add memory so agents can recall past actions.", details: "Implement memory mechanisms to give your agents context. Explore short-term memory for conversation history and long-term memory (often using vector stores) for recalling vast amounts of information.", completed: false },
+            { id: 15, level: 2, title: "Agent Evaluation", description: "Track agent accuracy, performance, and reliability.", details: "Develop strategies to measure how well your agent is performing its tasks. This involves creating test cases, defining success metrics, and logging agent actions for debugging and analysis.", completed: false },
+            { id: 16, level: 2, title: "Multi-Step Reasoning", description: "Teach agents to think in logical sequences.", details: "Go beyond single-step tool use. Implement techniques that allow agents to create and execute multi-step plans, breaking down complex user requests into a series of smaller, manageable actions.", completed: false },
+            { id: 17, level: 2, title: "Multi-Agent Systems", description: "Enable agents to work together on complex tasks.", details: "Explore the concept of agent collaboration. Design systems where specialized agents (e.g., a 'researcher' agent and a 'writer' agent) work together, each contributing its unique skills to solve a larger problem.", completed: false },
+            { id: 18, level: 2, title: "Agentic RAG", description: "Use RAG in an autonomous agent setup.", details: "Combine the power of agents and RAG. Create agents that can autonomously decide when they need more information and use a RAG pipeline to retrieve it before continuing with their task.", completed: false },
+            { id: 19, level: 2, title: "Action Planning", description: "Make agents plan, adapt, and retry intelligently.", details: "Improve agent robustness by implementing sophisticated planning and error-handling. Teach agents to adapt their plans based on new information and to retry failed actions with different approaches.", completed: false },
+            { id: 20, level: 2, title: "Safety & Guardrails", description: "Add filters to keep agents safe and factual.", details: "Implement crucial safety layers to control agent behavior. This includes content moderation filters, constraining agents to specific tools, and requiring human-in-the-loop approval for sensitive actions.", completed: false },
+
+            { id: 21, level: 3, title: "Real-World Integration", description: "Connect agents to tools like Slack, Notion, or Gmail.", details: "Bridge the gap between your agent and the real world. Learn how to build API connectors and wrappers that allow your agent to interact with popular business and productivity applications.", completed: false },
+            { id: 22, level: 3, title: "Autonomous Loops", description: "Create agents that run and update tasks on their own.", details: "Design fully autonomous systems that can run continuously without human intervention. These agents can monitor data streams, react to events, and execute long-running tasks.", completed: false },
+            { id: 23, level: 3, title: "Custom Toolkits", description: "Equip agents with APIs or Python tools.", details: "Move beyond pre-built tools. Learn how to write your own custom functions and classes and make them available to your agent, giving it unique capabilities tailored to your specific domain.", completed: false },
+            { id: 24, level: 3, title: "Optimize Performance", description: "Improve speed, cost, and error handling.", details: "Focus on production-readiness. Implement caching strategies to reduce latency and cost, optimize token usage, and build robust error-handling and logging systems to ensure reliability.", completed: false },
+            { id: 25, level: 3, title: "Deploy to Production", description: "Host your AI agent for real users to access.", details: "Take the final step of making your agent available to others. Learn about deployment options, from serverless functions for simple agents to containerized services for complex, scalable applications.", completed: false },
+        ];
+
+        let progressChart;
+
+        const renderTopics = () => {
+            const level1Container = document.getElementById('level1');
+            const level2Container = document.getElementById('level2');
+            const level3Container = document.getElementById('level3');
+            
+            level1Container.innerHTML = '';
+            level2Container.innerHTML = '';
+            level3Container.innerHTML = '';
+
+            learningData.forEach(item => {
+                const container = item.level === 1 ? level1Container : item.level === 2 ? level2Container : level3Container;
+                const topicCard = `
+                    <div class="bg-white border border-stone-200 rounded-lg mb-3 overflow-hidden">
+                        <div class="p-4 cursor-pointer flex items-center justify-between" data-details-id="${item.id}">
+                            <div class="flex items-center">
+                                <input type="checkbox" id="item-${item.id}" data-id="${item.id}" class="h-5 w-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 mr-4" ${item.completed ? 'checked' : ''}>
+                                <label for="item-${item.id}" class="font-medium text-stone-700 flex-1 ${item.completed ? 'line-through text-stone-400' : ''}">${item.title}</label>
+                            </div>
+                             <span class="text-stone-400 transform transition-transform duration-300">&#9662;</span>
+                        </div>
+                        <div id="details-${item.id}" class="details-content px-4">
+                            <p class="pb-4 pt-2 text-stone-600 border-t border-stone-200">${item.details}</p>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += topicCard;
+            });
+        };
+
+        const updateProgress = () => {
+            const completedCount = learningData.filter(item => item.completed).length;
+            const totalCount = learningData.length;
+            const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+            document.getElementById('progressText').innerText = `${completedCount} of ${totalCount} topics completed (${percentage}%)`;
+            
+            progressChart.data.datasets[0].data = [completedCount, totalCount - completedCount];
+            progressChart.update();
+        };
+
+        const setupChart = () => {
+            const ctx = document.getElementById('progressChart').getContext('2d');
+            progressChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Completed', 'Remaining'],
+                    datasets: [{
+                        data: [0, learningData.length],
+                        backgroundColor: [
+                            '#059669', // emerald-600
+                            '#e5e7eb'  // gray-200
+                        ],
+                        borderColor: '#ffffff',
+                        borderWidth: 4,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            enabled: false
+                        }
+                    }
+                }
+            });
+        };
+
+        const handleTabClick = (e) => {
+            const targetTab = e.target.closest('.tab-btn');
+            if (!targetTab) return;
+
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('tab-active'));
+            targetTab.classList.add('tab-active');
+
+            document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.add('hidden'));
+            document.getElementById(targetTab.dataset.tab).classList.remove('hidden');
+        };
+
+        const handleContentClick = (e) => {
+            const checkbox = e.target.closest('input[type="checkbox"]');
+            if (checkbox) {
+                const id = parseInt(checkbox.dataset.id);
+                const item = learningData.find(i => i.id === id);
+                if (item) {
+                    item.completed = checkbox.checked;
+                    document.querySelector(`label[for="item-${id}"]`).classList.toggle('line-through');
+                    document.querySelector(`label[for="item-${id}"]`).classList.toggle('text-stone-400');
+                    updateProgress();
+                }
+                return; 
+            }
+
+            const detailsToggle = e.target.closest('[data-details-id]');
+            if (detailsToggle) {
+                const detailsId = detailsToggle.dataset.detailsId;
+                const detailsContent = document.getElementById(`details-${detailsId}`);
+                const arrow = detailsToggle.querySelector('span');
+                
+                detailsContent.classList.toggle('open');
+                arrow.classList.toggle('rotate-180');
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderTopics();
+            setupChart();
+            updateProgress();
+
+            document.querySelector('nav').addEventListener('click', handleTabClick);
+            document.getElementById('tab-content').addEventListener('click', handleContentClick);
+        });
+    </script>
+
+</body>
+</html>
