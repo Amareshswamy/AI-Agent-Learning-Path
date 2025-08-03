@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Chosen Palette: "Soothing Sage and Stone" -->
-    <!-- Application Structure Plan: A tab-based single-page application is chosen for optimal user experience. The content is segmented into three logical levels (Basics, Essentials, Advanced), corresponding to the tabs. This structure prevents overwhelming the user with a long scroll and allows them to directly access the section most relevant to their current knowledge. A persistent progress tracker (donut chart) is included to gamify the learning process and provide immediate visual feedback on completion, enhancing user engagement and motivation. -->
+    <!-- Application Structure Plan: A tab-based single-page application is chosen for optimal user experience. The content is segmented into three logical levels (Basics, Essentials, Advanced), corresponding to the tabs. This structure prevents overwhelming the user with a long scroll and allows them to directly access the section most relevant to their current knowledge. A persistent progress tracker (donut chart) is included to gamify the learning process and provide immediate visual feedback on completion, enhancing user engagement and motivation. Progress is saved to localStorage. -->
     <!-- Visualization & Content Choices: The primary "data" is the hierarchical learning path. Goal: Organize & Inform. Method: Interactive tabbed layout with expandable cards. Interaction: Users click tabs to switch levels, click cards to see details, and check boxes to mark progress. Goal: Motivate. Method: Donut Chart (Chart.js). Interaction: Dynamically updates on checkbox clicks. Justification: This interactive structure turns a passive document into an active learning tool, providing clear navigation and a sense of accomplishment. -->
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
@@ -45,7 +45,7 @@
         
         <header class="text-center mb-8 md:mb-12">
             <h1 class="text-4xl md:text-5xl font-bold text-emerald-800">Your Journey to AI Agents</h1>
-            <p class="mt-4 text-lg text-stone-600 max-w-3xl mx-auto">This interactive guide transforms the AI Agent learning path into a manageable and trackable journey. Click on any topic to reveal more details and check them off as you master them.</p>
+            <p class="mt-4 text-lg text-stone-600 max-w-3xl mx-auto">This interactive guide transforms the AI Agent learning path into a manageable and trackable journey. Your progress is saved automatically in your browser.</p>
         </header>
 
         <div class="lg:flex lg:space-x-8">
@@ -79,6 +79,9 @@
                         <canvas id="progressChart"></canvas>
                     </div>
                     <p id="progressText" class="text-center mt-4 text-stone-600 font-medium"></p>
+                    <div class="mt-6 text-center">
+                        <button id="resetProgressBtn" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors text-sm">Reset Progress</button>
+                    </div>
                 </div>
             </aside>
 
@@ -86,7 +89,7 @@
     </div>
 
     <script>
-        const learningData = [
+        let learningData = [
             { id: 1, level: 1, title: "GenAI Introduction", description: "Get familiar with what Generative AI is and where it's used.", details: "This foundational step involves understanding the core concepts of Generative AI, differentiating it from other types of AI, and exploring its applications across various industries like content creation, drug discovery, and software development.", completed: false },
             { id: 2, level: 1, title: "Basics of LLMs", description: "Understand how large language models are trained & used.", details: "Dive into the architecture of Large Language Models (LLMs) like transformers. Learn about the lifecycle of an LLM, from pre-training on vast text corpora to fine-tuning for specific tasks.", completed: false },
             { id: 3, level: 1, title: "Prompt Engineering", description: "Learn to write effective prompts for better LLM results.", details: "Master the art of crafting clear, concise, and context-rich prompts. Explore techniques like zero-shot, few-shot, and chain-of-thought prompting to guide the LLM towards generating more accurate and relevant outputs.", completed: false },
@@ -118,6 +121,17 @@
 
         let progressChart;
 
+        const saveData = () => {
+            localStorage.setItem('aiAgentProgress', JSON.stringify(learningData));
+        };
+
+        const loadData = () => {
+            const savedData = localStorage.getItem('aiAgentProgress');
+            if (savedData) {
+                learningData = JSON.parse(savedData);
+            }
+        };
+
         const renderTopics = () => {
             const level1Container = document.getElementById('level1');
             const level2Container = document.getElementById('level2');
@@ -129,14 +143,15 @@
 
             learningData.forEach(item => {
                 const container = item.level === 1 ? level1Container : item.level === 2 ? level2Container : level3Container;
+                const isCompleted = item.completed;
                 const topicCard = `
                     <div class="bg-white border border-stone-200 rounded-lg mb-3 overflow-hidden">
                         <div class="p-4 cursor-pointer flex items-center justify-between" data-details-id="${item.id}">
-                            <div class="flex items-center">
-                                <input type="checkbox" id="item-${item.id}" data-id="${item.id}" class="h-5 w-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 mr-4" ${item.completed ? 'checked' : ''}>
-                                <label for="item-${item.id}" class="font-medium text-stone-700 flex-1 ${item.completed ? 'line-through text-stone-400' : ''}">${item.title}</label>
+                            <div class="flex items-center flex-grow">
+                                <input type="checkbox" id="item-${item.id}" data-id="${item.id}" class="h-5 w-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 mr-4 flex-shrink-0" ${isCompleted ? 'checked' : ''}>
+                                <label for="item-${item.id}" class="font-medium text-stone-700 flex-1 ${isCompleted ? 'line-through text-stone-400' : ''}">${item.title}</label>
                             </div>
-                             <span class="text-stone-400 transform transition-transform duration-300">&#9662;</span>
+                             <span class="text-stone-400 transform transition-transform duration-300 ml-2">&#9662;</span>
                         </div>
                         <div id="details-${item.id}" class="details-content px-4">
                             <p class="pb-4 pt-2 text-stone-600 border-t border-stone-200">${item.details}</p>
@@ -154,8 +169,10 @@
 
             document.getElementById('progressText').innerText = `${completedCount} of ${totalCount} topics completed (${percentage}%)`;
             
-            progressChart.data.datasets[0].data = [completedCount, totalCount - completedCount];
-            progressChart.update();
+            if (progressChart) {
+                progressChart.data.datasets[0].data = [completedCount, totalCount - completedCount];
+                progressChart.update();
+            }
         };
 
         const setupChart = () => {
@@ -212,6 +229,7 @@
                     document.querySelector(`label[for="item-${id}"]`).classList.toggle('line-through');
                     document.querySelector(`label[for="item-${id}"]`).classList.toggle('text-stone-400');
                     updateProgress();
+                    saveData();
                 }
                 return; 
             }
@@ -227,13 +245,22 @@
             }
         };
 
+        const handleResetClick = () => {
+            if (confirm("Are you sure you want to reset all your progress? This cannot be undone.")) {
+                localStorage.removeItem('aiAgentProgress');
+                location.reload();
+            }
+        };
+
         document.addEventListener('DOMContentLoaded', () => {
+            loadData();
             renderTopics();
             setupChart();
             updateProgress();
 
             document.querySelector('nav').addEventListener('click', handleTabClick);
             document.getElementById('tab-content').addEventListener('click', handleContentClick);
+            document.getElementById('resetProgressBtn').addEventListener('click', handleResetClick);
         });
     </script>
 
