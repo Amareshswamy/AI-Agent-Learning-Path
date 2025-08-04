@@ -45,7 +45,7 @@
         
         <header class="text-center mb-8 md:mb-12">
             <h1 class="text-4xl md:text-5xl font-bold text-emerald-800">Your Journey to AI Agents</h1>
-            <p class="mt-4 text-lg text-stone-600 max-w-3xl mx-auto">This interactive guide transforms the AI Agent learning path into a manageable and trackable journey. Your progress is saved automatically in your browser.</p>
+            <p class="mt-4 text-lg text-stone-600 max-w-3xl mx-auto">This interactive guide transforms the AI Agent learning path into a manageable and trackable journey. Your progress is saved automatically in your browser. <span id="saveStatus" class="text-emerald-600 font-medium"></span></p>
         </header>
 
         <div class="lg:flex lg:space-x-8">
@@ -79,8 +79,9 @@
                         <canvas id="progressChart"></canvas>
                     </div>
                     <p id="progressText" class="text-center mt-4 text-stone-600 font-medium"></p>
-                    <div class="mt-6 text-center">
-                        <button id="resetProgressBtn" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors text-sm">Reset Progress</button>
+                    <div class="mt-6 text-center space-y-2">
+                        <button id="resetProgressBtn" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors text-sm block w-full">Reset Progress</button>
+                        <button id="debugBtn" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors text-sm block w-full">Debug Storage</button>
                     </div>
                 </div>
             </aside>
@@ -122,13 +123,43 @@
         let progressChart;
 
         const saveData = () => {
-            localStorage.setItem('aiAgentProgress', JSON.stringify(learningData));
+            try {
+                localStorage.setItem('aiAgentProgress', JSON.stringify(learningData));
+                console.log('Progress saved successfully');
+                showSaveStatus('✓ Saved');
+            } catch (error) {
+                console.error('Failed to save progress:', error);
+                showSaveStatus('✗ Save failed');
+            }
+        };
+
+        const showSaveStatus = (message) => {
+            const statusElement = document.getElementById('saveStatus');
+            statusElement.textContent = message;
+            setTimeout(() => {
+                statusElement.textContent = '';
+            }, 2000);
         };
 
         const loadData = () => {
-            const savedData = localStorage.getItem('aiAgentProgress');
-            if (savedData) {
-                learningData = JSON.parse(savedData);
+            try {
+                const savedData = localStorage.getItem('aiAgentProgress');
+                if (savedData) {
+                    const parsedData = JSON.parse(savedData);
+                    // Merge saved data with current data structure
+                    parsedData.forEach(savedItem => {
+                        const currentItem = learningData.find(item => item.id === savedItem.id);
+                        if (currentItem) {
+                            currentItem.completed = savedItem.completed;
+                        }
+                    });
+                    console.log('Progress loaded successfully');
+                } else {
+                    console.log('No saved progress found');
+                }
+            } catch (error) {
+                console.error('Failed to load progress:', error);
+                localStorage.removeItem('aiAgentProgress'); // Clear corrupted data
             }
         };
 
@@ -226,10 +257,11 @@
                 const item = learningData.find(i => i.id === id);
                 if (item) {
                     item.completed = checkbox.checked;
-                    document.querySelector(`label[for="item-${id}"]`).classList.toggle('line-through');
-                    document.querySelector(`label[for="item-${id}"]`).classList.toggle('text-stone-400');
+                    document.querySelector(`label[for="item-${id}"]`).classList.toggle('line-through', checkbox.checked);
+                    document.querySelector(`label[for="item-${id}"]`).classList.toggle('text-stone-400', checkbox.checked);
                     updateProgress();
                     saveData();
+                    console.log(`Topic ${id} marked as ${checkbox.checked ? 'completed' : 'incomplete'}`);
                 }
                 return; 
             }
@@ -248,8 +280,21 @@
         const handleResetClick = () => {
             if (confirm("Are you sure you want to reset all your progress? This cannot be undone.")) {
                 localStorage.removeItem('aiAgentProgress');
-                location.reload();
+                // Reset all items to incomplete
+                learningData.forEach(item => item.completed = false);
+                renderTopics();
+                updateProgress();
+                console.log('Progress reset successfully');
             }
+        };
+
+        // Debug function to check localStorage
+        const debugStorage = () => {
+            console.log('=== LocalStorage Debug ===');
+            console.log('localStorage available:', typeof(Storage) !== "undefined");
+            console.log('Saved data:', localStorage.getItem('aiAgentProgress'));
+            console.log('Current learning data:', learningData);
+            console.log('Completed items:', learningData.filter(item => item.completed).length);
         };
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -261,6 +306,7 @@
             document.querySelector('nav').addEventListener('click', handleTabClick);
             document.getElementById('tab-content').addEventListener('click', handleContentClick);
             document.getElementById('resetProgressBtn').addEventListener('click', handleResetClick);
+            document.getElementById('debugBtn').addEventListener('click', debugStorage);
         });
     </script>
 
